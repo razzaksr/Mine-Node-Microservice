@@ -1,3 +1,15 @@
+GET http://localhost:8083/customers/
+authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNzM4MjQ1NTMwLCJleHAiOjE3MzgyNDkxMzB9.VHxq2pwXT9Xm27OFT9-D1UiJ9oxEUnfYWQPoe3c9JFA
+###
+#check simply for token via gateway service
+POST http://localhost:8083/auth/login
+Content-Type: application/json
+
+{
+    "username":"razak",
+    "password":"mohamed@123"
+}
+###
 GET http://localhost:8083/accounts/
 ###
 GET http://localhost:8083/customers/

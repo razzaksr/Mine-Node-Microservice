@@ -17,11 +17,32 @@ async function getService(serviceName) {
   }
 }
 
+const addAuthHeader = (req,res,next) => {
+  // console.log(req.headers)
+  const token = req.headers["authorization"];
+  // console.log(token+" received @ gateway")
+  if (token) {
+    // proxyReq.setHeader("Authorization", token);
+    req.headers["authorization"] = token;
+  }
+  next()
+};
+
 // API Gateway routes
-app.use("/customers", async (req, res, next) => {
+app.use("/auth", async (req, res, next) => {
   try {
+    const authServiceUrl = await getService("auth-service");
+    createProxyMiddleware({ target: authServiceUrl, changeOrigin: true, onProxyReq: addAuthHeader })(req, res, next);
+  } catch (error) {
+    res.status(500).send({ error: error.message });
+  }
+});
+
+app.use("/customers", addAuthHeader ,async (req, res, next) => {
+  try {
+    //console.log('customers received')
     const customerServiceUrl = await getService("customer-service");
-    createProxyMiddleware({ target: customerServiceUrl, changeOrigin: true })(req, res, next);
+    createProxyMiddleware({ target: customerServiceUrl, changeOrigin: true})(req, res, next);
   } catch (error) {
     res.status(500).send({ error: error.message });
   }
@@ -30,7 +51,7 @@ app.use("/customers", async (req, res, next) => {
 app.use("/accounts", async (req, res, next) => {
   try {
     const accountServiceUrl = await getService("account-service");
-    createProxyMiddleware({ target: accountServiceUrl, changeOrigin: true })(req, res, next);
+    createProxyMiddleware({ target: accountServiceUrl, changeOrigin: true, onProxyReq: addAuthHeader })(req, res, next);
   } catch (error) {
     res.status(500).send({ error: error.message });
   }

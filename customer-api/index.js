@@ -1,7 +1,9 @@
+require("dotenv").config();
 const express = require('express')
 const bodyParser = require('body-parser')
 const Consul = require("consul");
 const axios = require("axios");
+const jwt = require("jsonwebtoken");
 
 const app = express()
 app.use(bodyParser.urlencoded({extended:true}))
@@ -23,7 +25,19 @@ let myCustomers = [
     }
 ]
 
-app.get('/',async(req,res)=>{
+// jwt verification
+const authenticateJWT = (req, res, next) => {
+    const token = req.headers["authorization"];
+    if (!token) return res.status(403).send({ message: "No token provided" });
+    // console.log(token.split(" ")[1]+" "+process.env.JWT_SECRET)
+    jwt.verify(token.split(" ")[1], process.env.JWT_SECRET, (err, decoded) => {
+      if (err) return res.status(401).send({ message: "Unauthorized" });
+      req.user = decoded;
+      next();
+    });
+}
+
+app.get('/',authenticateJWT,async(req,res)=>{
     try {
         // Get Account service address from Consul
         const services = await consul.catalog.service.nodes("account-service");
@@ -34,7 +48,7 @@ app.get('/',async(req,res)=>{
         // way to add accounts with each customer>> its working well
         myCustomers.map(async(each)=>{
             const accountUrl = `http://${accountService.Address}:${accountService.ServicePort}/customer/${each.username}`;
-            const response = await axios.get(accountUrl);
+            const response = await axios.get(accountUrl,authenticateJWT);
             each.accounts = response.data
         })
 
